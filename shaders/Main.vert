@@ -7,7 +7,9 @@ in layout(location=1) vec3 colorIn;
 
 out vec3 colorOut;
 
-void main(){
-    gl_Position = Matrix*vec4(position, 0.f, 1.f); 
-    colorOut = colorIn;   
+void main()
+{
+	gl_Position=Matrix*vec4(position, 0.f, 1.f);
+
+	colorOut = colorIn;
 }
