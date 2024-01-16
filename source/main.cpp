@@ -121,41 +121,48 @@ void CreateTriangle()
 
 void CreateQuad()
 {
-    unsigned int QuadPosVBO = 0, QuadColorVBO = 0;
+   unsigned int QuadPosVBO = 0, QuadColorVBO = 0;
+    unsigned int QuadEBO = 0;
 
     float vertices[] =
     {
-        // Triangle 1
-         +0.f, +1.f, 
-         +0.f, -1.f,
-         +1.f, +0.f,
-
-        // Triangle 2
-        +0.f, +1.f,
-        -1.f, +0.f,
-        +0.f, -1.f,
+         +0.f, +1.f, // 0 
+         +0.f, -1.f, // 1
+         +1.f, +0.f, // 2
+        -1.f, +0.f   // 3
     };
 
     GLubyte colors[] =
     {
+        0, 125, 255,// 0
+        0, 125, 255,// 1
+        0,   0, 255,// 2
+       85, 125, 255,// 3
+    };
+
+    unsigned int indices[] =
+    {
         // Triangle 1
-        0, 125, 255,
-        0, 125, 255,
-        0,   0, 255,
+        0, 1, 2,
 
         // Triangle 2
-        0, 125, 255,
-        85, 125, 255,
-        0, 125, 255
+        0, 3, 1
     };
 
     glGenVertexArrays(1, &QuadVAO);
+
+    glGenBuffers(1, &QuadEBO);
 
     glGenBuffers(1, &QuadPosVBO);
     glGenBuffers(1, &QuadColorVBO);
 
     glBindVertexArray(QuadVAO);
     {
+
+        // Fill EBO
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, QuadEBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
         //Fill position VBO
         glBindBuffer(GL_ARRAY_BUFFER, QuadPosVBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -229,7 +236,7 @@ void desenha(float dt)
 
         glBindVertexArray(QuadVAO);
 
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         modelToWorld = glm::translate(glm::mat4(1.f), glm::vec3(-0.5f, -0.5f, 0.f));
         modelToWorld = glm::rotate(modelToWorld, glm::radians(60.f * dt), glm::vec3(0.f, 0.f, 1.f));
