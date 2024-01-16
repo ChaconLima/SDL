@@ -1,0 +1,2 @@
+make
+./build/prog.exe
