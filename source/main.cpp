@@ -134,7 +134,6 @@ int main(void){
     std::cout<<"GLSL Version:"<<glGetString(GL_SHADING_LANGUAGE_VERSION)<< std::endl;
 
     initOpenGL();
-    // int colorId= glGetUniformLocation(programId, "u_deltaTime");
     int matrixId= glGetUniformLocation(programId, "Matrix");
     float startTime = glfwGetTime();
     glm::mat4 ScaleMatrix = glm::scale(glm::mat4(1.f), glm::vec3(0.5f, 0.5f, 1.f));
@@ -144,8 +143,6 @@ int main(void){
 
         float correntTime = glfwGetTime();
         float dt = correntTime - startTime;
-      
-        // glUniform1f(colorId, dt);
         glm::mat4 RotationMatrix = glm::rotate(glm::mat4(1.f), glm::radians(60.f * dt), glm::vec3(0.f, 0.f, 1.f));
         
         glm::mat4 FinalTransMatrix = RotationMatrix * ScaleMatrix;
