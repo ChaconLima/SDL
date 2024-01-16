@@ -11,74 +11,16 @@
 #include<sstream>
 
 #include"../include/Error.h"
+#include"../include/Shader.h"
 
-unsigned int programId = 0;
 
 unsigned int cubeVAO = 0;
 unsigned int indexOffSet = 0;
 
-int matrixId;
+
 glm::mat4 projection(1.f);
+Shader shader("shaders/Main.vert", "shaders/Main.frag");
 
-std::string ReadProgramSource(const std::string filePath)
-{
-    std::fstream file(filePath);
-
-    std::stringstream ss;
-    std::string line;
-
-    while (getline(file, line))
-    {
-        ss << line << "\n";
-    }
-    file.close();
-
-    return ss.str();
-}
-
-void CompileAndLinkShaders()
-{
-    // 1. Criamos os nossos Objetos: 
-    //    Programa = Vertex Shader + Fragment Shader    
-    programId = glCreateProgram();
-    unsigned int vertexShaderId = glCreateShader(GL_VERTEX_SHADER);
-    unsigned int fragmentShaderId = glCreateShader(GL_FRAGMENT_SHADER);
-
-    // 2. Passamos as strings para com códigos GLSL
-    //    para o tipo const char* = código fonte final
-    std::string vsCode, fsCode;
-    vsCode = ReadProgramSource("shaders/Main.vert");
-    fsCode = ReadProgramSource("shaders/Main.frag");
-
-    const char* vsFinalCode = vsCode.c_str();
-    const char* fsFinalCode = fsCode.c_str();
-
-    // 3. Copiamos o código fonte final 
-    //para o Shader anteriormente criado
-    glShaderSource(vertexShaderId, 1, &vsFinalCode, NULL);
-    glShaderSource(fragmentShaderId, 1, &fsFinalCode, NULL);
-
-    // 4. Compilamos os Shaders
-    glCompileShader(vertexShaderId);
-    glCompileShader(fragmentShaderId);
-
-    // 5. Anexamos os Shaders compilados ao Programa
-    glAttachShader(programId, vertexShaderId);
-    glAttachShader(programId, fragmentShaderId);
-
-
-    //6. Link
-    glLinkProgram(programId);
-
-    //7. Delete
-    glDeleteShader(vertexShaderId);
-    glDeleteShader(fragmentShaderId);
-
-
-    //8. Utilizar o programa
-    glUseProgram(programId);
-
-}
 
 void CreateCube()
 {
@@ -231,12 +173,12 @@ void CreateCube()
 
 void initOpenGL()
 {
-    
+
     CreateCube();
 
-    CompileAndLinkShaders();
+    shader.CreateShaders();
+    shader.Bind();
 
-    matrixId = glGetUniformLocation(programId, "Matrix");
     glEnable(GL_DEPTH_TEST);
 
     projection = glm::perspective(glm::radians(45.f), 640.f / 480.f, 0.1f, 10.f);
@@ -255,14 +197,14 @@ void desenha(float dt)
 
     glm::mat4 finalMatrix = projection * model;
 
-    glUniformMatrix4fv(matrixId, 1, GL_FALSE, glm::value_ptr(finalMatrix));
-    
+    shader.SendUniformData("Matrix", finalMatrix);
+
     glBindVertexArray(cubeVAO);
     {
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, (void*)indexOffSet);
     }
     glBindVertexArray(0);
-    
+
 }
 
 
@@ -293,6 +235,7 @@ int main()
         fatalError("Error loading GLEW extensions!");
     }
 
+    
     initOpenGL();
 
 
