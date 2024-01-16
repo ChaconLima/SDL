@@ -1,7 +1,10 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include<string>
 #include<fstream>
@@ -71,18 +74,34 @@ void CompileAndLinkShaders(){
 
 void initOpenGL(){
     float vertices [] = {
-        +0.0f, +0.5f,
-        -0.5f, -0.5f,
-        +0.5f, -0.5f
+         +1.f,        +0.f , //+0.0f, +0.5f,
+        -0.5f, +sqrt(3)/2.f, //- 0.5f, -0.5f,
+        -0.5f, -sqrt(3)/2.f, //-0.5f, - 0.5f
     };
 
-    unsigned int bufferId = 0;
-    glGenBuffers(1, &bufferId);
-    glBindBuffer(GL_ARRAY_BUFFER, bufferId);
+    GLubyte colors [] = {
+        255,0,0,
+        0,255,0,
+        0,0,255
+    };
+
+    unsigned int positionVBO = 0, colorVBO = 0;
+
+    glGenBuffers(1, &positionVBO);
+    glGenBuffers(1, &colorVBO);
+
+    // AJUSTAR POSITION
+    glBindBuffer(GL_ARRAY_BUFFER, positionVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0,2,GL_FLOAT, GL_FALSE, 0, 0);
+    glVertexAttribPointer(0,2,GL_FLOAT, GL_FALSE, 2*sizeof(float), 0);
     glEnableVertexAttribArray(0);
+
+    // AJUSTAR COLOR
+    glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
+    glVertexAttribPointer(1,3,GL_UNSIGNED_BYTE, GL_TRUE, 3*sizeof(GLubyte), 0);
+    glEnableVertexAttribArray(1);
 
     CompileAndLinkShaders();
 }
@@ -115,13 +134,24 @@ int main(void){
     std::cout<<"GLSL Version:"<<glGetString(GL_SHADING_LANGUAGE_VERSION)<< std::endl;
 
     initOpenGL();
-    glm::vec3 myColor(1.f,0.f,1.f);
-    int colorId= glGetUniformLocation(programId, "triangleColor");
-    glUniform3fv(colorId,1, &myColor.x);
-
+    // int colorId= glGetUniformLocation(programId, "u_deltaTime");
+    int matrixId= glGetUniformLocation(programId, "Matrix");
+    float startTime = glfwGetTime();
+    glm::mat4 ScaleMatrix = glm::scale(glm::mat4(1.f), glm::vec3(0.5f, 0.5f, 1.f));
 
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)){
+
+        float correntTime = glfwGetTime();
+        float dt = correntTime - startTime;
+      
+        // glUniform1f(colorId, dt);
+        glm::mat4 RotationMatrix = glm::rotate(glm::mat4(1.f), glm::radians(60.f * dt), glm::vec3(0.f, 0.f, 1.f));
+        
+        glm::mat4 FinalTransMatrix = RotationMatrix * ScaleMatrix;
+
+        glUniformMatrix4fv(matrixId, 1, GL_FALSE, glm::value_ptr(FinalTransMatrix));
+
         /* Render here */
         glClear(GL_COLOR_BUFFER_BIT);
 
