@@ -12,12 +12,13 @@
 
 #include"../include/Error.h"
 
+unsigned int programId = 0;
 
-unsigned int programId;
-unsigned int TriVAO = 0, QuadVAO=0;
+unsigned int cubeVAO = 0;
+unsigned int indexOffSet = 0;
 
 int matrixId;
-glm::mat4 ScaleMatrix;
+glm::mat4 projection(1.f);
 
 std::string ReadProgramSource(const std::string filePath)
 {
@@ -79,173 +80,189 @@ void CompileAndLinkShaders()
 
 }
 
-void CreateTriangle()
+void CreateCube()
 {
-    unsigned int TriPosVBO = 0, TriColorVBO = 0;
-    
-    float vertices[] =
+
+    glm::vec3 points[] =
     {
-         +1.f,        +0.f , //+0.0f, +0.5f,
-        -0.5f, +sqrt(3) / 2.f, //- 0.5f, -0.5f,
-        -0.5f, -sqrt(3) / 2.f, //-0.5f, - 0.5f
+        // Front
+        glm::vec3(-0.5f, +0.5f, +0.5f),//0
+        glm::vec3(-0.5f, -0.5f, +0.5f),//1
+        glm::vec3(+0.5f, -0.5f, +0.5f),//2
+        glm::vec3(+0.5f, +0.5f, +0.5f),//3
+
+        //Back
+        glm::vec3(+0.5f, +0.5f, -0.5f),//4
+        glm::vec3(+0.5f, -0.5f, -0.5f),//5
+        glm::vec3(-0.5f, -0.5f, -0.5f),//6
+        glm::vec3(-0.5f, +0.5f, -0.5f), //7
+
+    };
+    glm::vec3 vertices[] =
+    {
+        // Front
+       points[0],//0
+       points[1],//1
+       points[2],//2 
+       points[3],//3
+
+       //Back
+       points[4],//4 
+       points[5],//5 
+       points[6],//6 
+       points[7],//7
+
+       //Right
+       points[3],//8
+       points[2],//9 
+       points[5],//10 
+       points[4],//11
+
+       //Left
+       points[7],//12 
+       points[6],//13 
+       points[1],//14 
+       points[0],//15
+
+       //Top
+       points[7],//16 
+       points[0],//17 
+       points[3],//18 
+       points[4],//19
+
+       //Bottom
+       points[1],//20 
+       points[6],//21 
+       points[5],//22 
+       points[2] //23	
     };
 
     GLubyte colors[] =
     {
-        255, 0, 0,
-        0, 255, 0,
-        0, 0, 255
-    };
+        //Front Red
+       255, 0, 0,
+       255, 0, 0,
+       255, 0, 0,
+       255, 0, 0,
 
-    glGenVertexArrays(1, &TriVAO);
-    
-    glGenBuffers(1, &TriPosVBO);
-    glGenBuffers(1, &TriColorVBO);
+       //Back Green
+       0, 255, 0,
+       0, 255, 0,
+       0, 255, 0,
+       0, 255, 0,
 
-    glBindVertexArray(TriVAO);
-    {
-        //Fill position VBO
-        glBindBuffer(GL_ARRAY_BUFFER, TriPosVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-        glEnableVertexAttribArray(0);        
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+       //Right Blue
+        0, 0, 255,
+        0, 0, 255,
+        0, 0, 255,
+        0, 0, 255,
 
-        //Fill Color VBO
-        glBindBuffer(GL_ARRAY_BUFFER, TriColorVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_UNSIGNED_BYTE, GL_TRUE, 3 * sizeof(GLubyte), 0);
-    }
-    glBindVertexArray(0);
-}
+        //Left Yellow
+        255, 255, 0,
+        255, 255, 0,
+        255, 255, 0,
+        255, 255, 0,
 
-void CreateQuad()
-{
-   unsigned int QuadPosVBO = 0, QuadColorVBO = 0;
-    unsigned int QuadEBO = 0;
+        //Top Magenta
+        255, 0, 255,
+        255, 0, 255,
+        255, 0, 255,
+        255, 0, 255,
 
-    float vertices[] =
-    {
-         +0.f, +1.f, // 0 
-         +0.f, -1.f, // 1
-         +1.f, +0.f, // 2
-        -1.f, +0.f   // 3
-    };
-
-    GLubyte colors[] =
-    {
-        0, 125, 255,// 0
-        0, 125, 255,// 1
-        0,   0, 255,// 2
-       85, 125, 255,// 3
+        //Bottom Cyan
+        0, 255, 255,
+        0, 255, 255,
+        0, 255, 255,
+        0, 255, 255
     };
 
     unsigned int indices[] =
     {
-        // Triangle 1
-        0, 1, 2,
-
-        // Triangle 2
-        0, 3, 1
+        0,   1,  2,  0,  2,  3,// Front
+        4,   5,  6,  4,  6,  7,// Back 
+        8,   9, 10,  8, 10, 11,// Right 
+        12, 13, 14, 12, 14, 15,// Left 
+        16, 17, 18, 16, 18, 19,// Top 
+        20, 21, 22, 20, 22, 23 // Bottom 
     };
 
-    glGenVertexArrays(1, &QuadVAO);
+    unsigned int BufferId = 0;
+    glGenVertexArrays(1, &cubeVAO);
+    glGenBuffers(1, &BufferId);
 
-    glGenBuffers(1, &QuadEBO);
+    //The buffer is created but it will not be filled
+    glBindBuffer(GL_ARRAY_BUFFER, BufferId);
+    glBufferData(GL_ARRAY_BUFFER,
+        sizeof(vertices) + sizeof(colors) + sizeof(indices), 0, GL_STATIC_DRAW);
 
-    glGenBuffers(1, &QuadPosVBO);
-    glGenBuffers(1, &QuadColorVBO);
+    // Fill with vertices
+    unsigned int currentOffSet = 0;
+    glBufferSubData(GL_ARRAY_BUFFER, currentOffSet,
+        sizeof(vertices), vertices);
 
-    glBindVertexArray(QuadVAO);
+    // Fill with colors
+    currentOffSet += sizeof(vertices);
+    glBufferSubData(GL_ARRAY_BUFFER, currentOffSet,
+        sizeof(colors), colors);
+
+    // Fill with indices
+    currentOffSet += sizeof(colors);
+    glBufferSubData(GL_ARRAY_BUFFER, currentOffSet,
+        sizeof(indices), indices);
+
+
+    indexOffSet = currentOffSet;
+
+    glBindVertexArray(cubeVAO);
     {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, BufferId);
+        glBindBuffer(GL_ARRAY_BUFFER, BufferId);
 
-        // Fill EBO
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, QuadEBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-        //Fill position VBO
-        glBindBuffer(GL_ARRAY_BUFFER, QuadPosVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
 
-        // Fill Color VBO
-        glBindBuffer(GL_ARRAY_BUFFER, QuadColorVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
         glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_UNSIGNED_BYTE, GL_TRUE, 3 * sizeof(GLubyte), 0);
+        glVertexAttribPointer(1, 3, GL_UNSIGNED_BYTE, GL_TRUE,
+            3 * sizeof(GLubyte), (void*)sizeof(vertices));
+
     }
     glBindVertexArray(0);
 }
 
 void initOpenGL()
 {
-    CreateTriangle();
-    CreateQuad();
+    
+    CreateCube();
 
     CompileAndLinkShaders();
 
     matrixId = glGetUniformLocation(programId, "Matrix");
-    
+    glEnable(GL_DEPTH_TEST);
+
+    projection = glm::perspective(glm::radians(45.f), 640.f / 480.f, 0.1f, 10.f);
+    projection = projection * glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, -5.f));
 }
 
 
 void desenha(float dt)
 {
-   
-    glClear(GL_COLOR_BUFFER_BIT);
 
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glm::mat4 model = glm::rotate(glm::mat4(1.f), -dt, glm::vec3(0.f, 1.f, 0.f));
+    model = glm::rotate(model, 1.75f * dt, glm::vec3(1.f, 0.f, 0.f));
+    model = glm::rotate(model, 0.75f * dt, glm::vec3(0.f, 0.f, 1.f));
+
+    glm::mat4 finalMatrix = projection * model;
+
+    glUniformMatrix4fv(matrixId, 1, GL_FALSE, glm::value_ptr(finalMatrix));
     
+    glBindVertexArray(cubeVAO);
+    {
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, (void*)indexOffSet);
+    }
+    glBindVertexArray(0);
     
-    //  Triang 1 e 2 
-    {
-        glm::mat4 modelToWorld(1.f);
-
-        modelToWorld= glm::translate(modelToWorld, glm::vec3(-0.5f, 0.5f, 0.f));
-        modelToWorld= glm::rotate(modelToWorld, glm::radians(60.f * dt), glm::vec3(0.f, 0.f, 1.f));
-        modelToWorld *= ScaleMatrix;
-
-        glUniformMatrix4fv(matrixId, 1, GL_FALSE, glm::value_ptr(modelToWorld));
-
-        
-        glBindVertexArray(TriVAO);
-        
-
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-
-
-        modelToWorld = glm::translate(glm::mat4(1.f), glm::vec3(+0.5f, 0.5f, 0.f));
-        modelToWorld = glm::rotate(modelToWorld, glm::radians(-60.f * dt), glm::vec3(0.f, 0.f, 1.f));
-        modelToWorld *= ScaleMatrix;
-
-        glUniformMatrix4fv(matrixId, 1, GL_FALSE, glm::value_ptr(modelToWorld));
-
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-
-    }
-
-    // Quad
-    {
-        glm::mat4 modelToWorld(1.f);
-
-        modelToWorld = glm::translate(modelToWorld, glm::vec3(+0.5f, -0.5f, 0.f));
-        modelToWorld = glm::rotate(modelToWorld, glm::radians(-60.f * dt), glm::vec3(0.f, 0.f, 1.f));
-        modelToWorld *= ScaleMatrix;
-
-        glUniformMatrix4fv(matrixId, 1, GL_FALSE, glm::value_ptr(modelToWorld));
-
-        glBindVertexArray(QuadVAO);
-
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-        modelToWorld = glm::translate(glm::mat4(1.f), glm::vec3(-0.5f, -0.5f, 0.f));
-        modelToWorld = glm::rotate(modelToWorld, glm::radians(60.f * dt), glm::vec3(0.f, 0.f, 1.f));
-        modelToWorld *= ScaleMatrix;
-
-        glUniformMatrix4fv(matrixId, 1, GL_FALSE, glm::value_ptr(modelToWorld));
-        
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-    }
 }
 
 
@@ -259,7 +276,7 @@ int main()
         return -1;
 
     /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(640, 480, "Triangle - Color VBO", NULL, NULL);
+    window = glfwCreateWindow(640, 480, "3D Cube", NULL, NULL);
     if (!window)
     {
         fatalError("GLFW Window could not be created!");
@@ -277,20 +294,18 @@ int main()
     }
 
     initOpenGL();
-   
+
 
     float startTime = glfwGetTime();
-
-    ScaleMatrix = glm::scale(glm::mat4(1.f), glm::vec3(0.35f, 0.35f, 1.f));
 
     while (!glfwWindowShouldClose(window))
     {
 
         float currentTime = glfwGetTime();
-        float dt = currentTime - startTime;    
-       
+        float dt = currentTime - startTime;
+
         desenha(dt);
-       
+
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
 
