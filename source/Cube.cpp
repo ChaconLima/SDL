@@ -3,10 +3,11 @@
 
 #include "../include/Cube.h"
 
-Cube::Cube():
-	_VAO(0), _EBO(0),
-	_positionVBO(0), _colorVBO(0),
-	_position(0.f), _model(1.f)
+Cube::Cube(unsigned int nCubes) :
+    _VAO(0), _EBO(0),
+    _positionVBO(0), _colorVBO(0),
+    _modelVBO(0), _totalCubes(nCubes),
+    _position(0.f), _model(1.f)
 {
 }
 
@@ -14,6 +15,7 @@ Cube::~Cube()
 {
     glDeleteBuffers(1, &_positionVBO);
     glDeleteBuffers(1, &_colorVBO);
+    glDeleteBuffers(1, &_modelVBO);
     glDeleteBuffers(1, &_EBO);
     glDeleteVertexArrays(1, &_VAO);
 }
@@ -36,13 +38,18 @@ glm::mat4 Cube::GetPosition() const
     return _model;
 }
 
+unsigned int Cube::GetModelVBO() const
+{
+    return _modelVBO;
+}
 
 void Cube::Draw()
 {
-    
+
     glBindVertexArray(_VAO);
     {
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+       // glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+        glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0, _totalCubes);
     }
     glBindVertexArray(0);
 }
@@ -54,6 +61,7 @@ void Cube::CreateBuffers()
     glGenBuffers(1, &_EBO);
     glGenBuffers(1, &_positionVBO);
     glGenBuffers(1, &_colorVBO);
+    glGenBuffers(1, &_modelVBO);
 }
 
 void Cube::FillBuffers()
@@ -161,7 +169,7 @@ void Cube::FillBuffers()
         20, 21, 22, 20, 22, 23 // Bottom 
     };
 
-  
+
     //Fill with indices
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
@@ -172,8 +180,12 @@ void Cube::FillBuffers()
 
     // Fill with colors
     glBindBuffer(GL_ARRAY_BUFFER, _colorVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
-   
+    glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW); 
+    
+    // Create empty model Buffer
+    glBindBuffer(GL_ARRAY_BUFFER, _modelVBO);
+    glBufferData(GL_ARRAY_BUFFER, _totalCubes*sizeof(glm::mat4), 0, GL_DYNAMIC_DRAW);
+
 }
 
 void Cube::LinkBuffers()
@@ -184,11 +196,33 @@ void Cube::LinkBuffers()
 
         glBindBuffer(GL_ARRAY_BUFFER, _positionVBO);
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), 0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
 
         glBindBuffer(GL_ARRAY_BUFFER, _colorVBO);
         glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_UNSIGNED_BYTE, GL_TRUE, 3*sizeof(GLubyte), 0);
+        glVertexAttribPointer(1, 3, GL_UNSIGNED_BYTE, GL_TRUE, 3 * sizeof(GLubyte), 0);
+
+
+        glBindBuffer(GL_ARRAY_BUFFER, _modelVBO);
+        {
+            glEnableVertexAttribArray(2);
+            glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4) * 0));
+
+            glEnableVertexAttribArray(3);
+            glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4) * 1));
+
+            glEnableVertexAttribArray(4);
+            glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4) * 2));
+
+            glEnableVertexAttribArray(5);
+            glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4) * 3));
+
+            glVertexAttribDivisor(2, 1);
+            glVertexAttribDivisor(3, 1);
+            glVertexAttribDivisor(4, 1);
+            glVertexAttribDivisor(5, 1);
+
+        }
     }
     glBindVertexArray(0);
 }

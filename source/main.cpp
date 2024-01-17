@@ -4,6 +4,7 @@
 
 #include<glm/glm.hpp>
 #include<glm/gtc/matrix_transform.hpp>
+#include<glm/gtx/transform.hpp>
 #include<glm/gtc/type_ptr.hpp>
 
 #include<string>
@@ -17,6 +18,10 @@
 
 GLFWwindow* window;
 
+const int WINDOW_WIDTH = 800;
+const int WINDOW_HEIGHT = 600;
+const unsigned int TOTAL_CUBES = 4;
+
 void initOpenGL()
 {
     /* Initialize the library */
@@ -26,7 +31,7 @@ void initOpenGL()
     }
 
     /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(640, 480, "3D Cube", NULL, NULL);
+    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "3D Cube", NULL, NULL);
     if (!window)
     {
         fatalError("GLFW Window could not be created!");
@@ -43,31 +48,50 @@ void initOpenGL()
 
     glEnable(GL_DEPTH_TEST);
 
-    
+
 }
 
 
 int main()
 {
-    
-
     initOpenGL();
 
     Shader shader("shaders/Main.vert", "shaders/Main.frag");
 
     shader.CreateShaders();
 
-    Cube cube;
+    Cube cube(TOTAL_CUBES);
     cube.Create();
-    cube.SetPosition(0.f, 0.f, -5.f);
-
-    glm::mat4 projection = glm::perspective(glm::radians(45.f), 640.f / 480.f, 0.1f, 10.f);
+   
+    float aspectRatio = static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT;
+    glm::mat4 projection = glm::perspective(glm::radians(45.f), aspectRatio, 0.1f, 500.f);
 
     shader.Bind();
     shader.SendUniformData("projection", projection);
 
-    
     float startTime = glfwGetTime();
+
+    glm::mat4 model[TOTAL_CUBES] = {};
+
+    // Position Matrix
+    glm::mat4 posMatrix[TOTAL_CUBES] =
+    {
+      glm::translate(glm::vec3(-2.5f, -2.5f, -15.f)),
+      glm::translate(glm::vec3(+2.5f, -2.5f, -15.f)),
+      glm::translate(glm::vec3(-5.5f, 5.f, -20.f)),
+      glm::translate(glm::vec3(+5.5f, 5.f, -20.f))
+    };
+
+    //Angular Speed - Axis X, Y and Z
+    glm::vec3 angSpeed[TOTAL_CUBES] =
+    {
+        glm::vec3(-1.75f, +0.75f, -2.75f),
+        glm::vec3(+0.75f, -3.75f, +1.75f),
+        glm::vec3(+1.50f, +0.50f, +2.35f),
+        glm::vec3(-1.75f, +0.75f, -3.75f)
+    };
+
+    unsigned int modelVBO = cube.GetModelVBO();
 
     while (!glfwWindowShouldClose(window))
     {
@@ -77,14 +101,21 @@ int main()
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 model = glm::rotate(glm::mat4(1.f), -dt, glm::vec3(0.f, 1.f, 0.f));
-        model = glm::rotate(model, 1.75f * dt, glm::vec3(1.f, 0.f, 0.f));
-        model = glm::rotate(model, 0.75f * dt, glm::vec3(0.f, 0.f, 1.f));
+        for (unsigned int i = 0; i < TOTAL_CUBES; i++)
+        {
+            model[i] = glm::rotate(angSpeed[i].x * dt, glm::vec3(1.f, 0.f, 0.f));
+            model[i] = glm::rotate(model[i], angSpeed[i].y * dt, glm::vec3(0.f, 1.f, 0.f));
+            model[i] = posMatrix[i] * glm::rotate(model[i], angSpeed[i].z * dt, glm::vec3(0.f, 0.f, 1.f));
+        }
         
-        glm::mat4 modelToWorld = cube.GetPosition() * model ;
-        shader.SendUniformData("model", modelToWorld);
+        // Update Matrix Buffer
+        glBindBuffer(GL_ARRAY_BUFFER, modelVBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(model), model);
 
-        cube.Draw();
+        //Cube 
+        {
+            cube.Draw();
+        }
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
